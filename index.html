@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>MasterScripts</title>
+<style>
+  :root{
+    --bg-app:#262624;
+    --bg-sidebar:#1d1c1a;
+    --bg-surface:#2f2e2b;
+    --bg-elevated:#3a3937;
+    --border:#44423e;
+    --text-primary:#ece8e1;
+    --text-secondary:#a9a59e;
+    --text-muted:#7a766f;
+    --accent:#da7756;
+    --accent-hover:#c3674a;
+    --accent-soft:rgba(218,119,86,0.16);
+    --highlight:rgba(240,196,90,0.38);
+    --danger:#d9685a;
+    --danger-hover:#c25548;
+    --radius:14px;
+    --radius-sm:9px;
+    --serif:Georgia,'Iowan Old Style','Times New Roman',serif;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --mono:'SF Mono','Courier New',monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:var(--sans);
+    background:var(--bg-app);
+    color:var(--text-primary);
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  button{font-family:inherit;}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--bg-elevated);border-radius:8px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+
+  #app{display:flex;height:100vh;width:100vw;position:relative;}
+
+  /* ---------- Sidebar ---------- */
+  #sidebar{
+    width:280px;flex-shrink:0;background:var(--bg-sidebar);
+    border-right:1px solid var(--border);
+    display:flex;flex-direction:column;min-height:0;
+    transition:width .22s ease,transform .22s ease;
+    overflow:hidden;
+  }
+  #app.sidebar-collapsed #sidebar{width:0;border-right:none;}
+  .sidebar-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 16px 8px;flex-shrink:0;
+  }
+  .brand{display:flex;align-items:center;gap:9px;min-width:0;}
+  .brand-mark{
+    width:26px;height:26px;border-radius:7px;background:var(--accent);
+    color:#fff;display:flex;align-items:center;justify-content:center;
+    font-family:var(--serif);font-weight:700;font-size:15px;flex-shrink:0;
+  }
+  .brand-name{font-family:var(--serif);font-size:1.18rem;font-weight:700;white-space:nowrap;color:var(--text-primary);}
+  .only-mobile{display:none;}
+
+  .new-btn{
+    margin:6px 16px 14px;padding:10px 14px;background:var(--accent);color:#fff;
+    border:none;border-radius:var(--radius-sm);font-weight:600;font-size:.9rem;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;
+    transition:background .15s;flex-shrink:0;
+  }
+  .new-btn:hover{background:var(--accent-hover);}
+  .search-wrap{padding:0 16px 10px;flex-shrink:0;}
+  .search-wrap input{
+    width:100%;background:var(--bg-surface);border:1px solid var(--border);
+    border-radius:var(--radius-sm);padding:8px 11px;color:var(--text-primary);
+    font-size:.85rem;outline:none;transition:border-color .15s;
+  }
+  .search-wrap input::placeholder{color:var(--text-muted);}
+  .search-wrap input:focus{border-color:var(--accent);}
+
+  .sidebar-section-label{
+    font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;
+    color:var(--text-muted);padding:4px 16px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .storage-warning{
+    margin:0 16px 10px;padding:9px 11px;background:rgba(217,104,90,0.14);
+    border:1px solid rgba(217,104,90,0.4);border-radius:var(--radius-sm);
+    color:#e8a99e;font-size:.76rem;line-height:1.4;flex-shrink:0;
+    display:flex;align-items:flex-start;gap:7px;
+  }
+  .notes-list{flex:1;overflow-y:auto;padding:2px 8px 16px;}
+
+  /* note item: swipe-to-delete structure */
+  .note-item-wrap{
+    position:relative;border-radius:var(--radius-sm);margin-bottom:2px;overflow:hidden;
+  }
+  .note-swipe-action{
+    position:absolute;top:0;right:0;bottom:0;width:84px;
+    background:var(--danger);color:#fff;border:none;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    font-size:.72rem;font-weight:600;cursor:pointer;
+  }
+  .note-swipe-action:hover{background:var(--danger-hover);}
+  .note-item{
+    position:relative;background:var(--bg-sidebar);
+    padding:10px 36px 10px 12px;border-radius:var(--radius-sm);cursor:pointer;
+    transition:background .12s,transform .18s ease;
+    transform:translateX(0);
+  }
+  .note-item.dragging{transition:none;}
+  .note-item:hover{background:var(--bg-elevated);}
+  .note-item.active{background:var(--accent-soft);}
+  .note-title-row{display:flex;align-items:center;gap:5px;}
+  .note-pin-icon{color:var(--accent);flex-shrink:0;display:none;}
+  .note-item.pinned .note-pin-icon{display:inline-flex;}
+  .note-title{
+    font-size:.92rem;font-weight:600;color:var(--text-primary);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .note-snippet{
+    font-size:.78rem;color:var(--text-muted);margin-top:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .note-meta{font-size:.7rem;color:var(--text-muted);margin-top:5px;}
+  .note-delete{
+    position:absolute;right:6px;top:9px;
+    width:26px;height:26px;border:none;background:transparent;color:var(--text-muted);
+    border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;
+  }
+  .note-pin-btn{
+    position:absolute;right:34px;top:9px;
+    width:26px;height:26px;border:none;background:transparent;color:var(--text-muted);
+    border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;
+  }
+  /* Desktop (hover-capable): icons hidden until hover, click = direct action */
+  @media (hover:hover) and (pointer:fine){
+    .note-delete,.note-pin-btn{opacity:0;transition:opacity .12s;}
+    .note-item:hover .note-delete,.note-item:hover .note-pin-btn{opacity:1;}
+    .note-delete:hover{background:var(--bg-app);color:var(--danger);}
+    .note-pin-btn:hover{background:var(--bg-app);color:var(--accent);}
+  }
+  /* Touch devices: no hover, so use swipe-to-reveal instead. Keep a small always-visible
+     kebab/more affordance instead of a delete icon to avoid accidental taps. */
+  @media (hover:none),(pointer:coarse){
+    .note-delete{display:none;}
+    .note-pin-btn{display:none;}
+    .note-item{padding-right:14px;}
+  }
+  .empty-list-hint{padding:18px 12px;color:var(--text-muted);font-size:.85rem;text-align:center;}
+  .swipe-hint{
+    padding:8px 16px 4px;color:var(--text-muted);font-size:.72rem;text-align:center;
+    display:none;
+  }
+  @media (hover:none),(pointer:coarse){
+    .swipe-hint.show{display:block;}
+  }
+
+  #backdrop{display:none;}
+
+  /* ---------- Main ---------- */
+  #main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;}
+
+  #topbar{
+    display:flex;align-items:center;gap:6px;padding:10px 14px;
+    border-bottom:1px solid var(--border);flex-shrink:0;position:relative;
+  }
+  .icon-btn{
+    width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    border-radius:50%;background:transparent;border:none;color:var(--text-secondary);
+    cursor:pointer;transition:background .12s,color .12s;
+  }
+  .icon-btn:hover{background:var(--bg-elevated);color:var(--text-primary);}
+  .title-input{
+    flex:1;min-width:0;background:transparent;border:none;outline:none;
+    font-family:var(--serif);font-size:1.2rem;color:var(--text-primary);
+    padding:6px 6px;
+  }
+  .title-input::placeholder{color:var(--text-muted);}
+  .save-status{font-size:.74rem;color:var(--text-muted);white-space:nowrap;flex-shrink:0;margin-right:2px;}
+  .word-count{font-size:.74rem;color:var(--text-muted);white-space:nowrap;flex-shrink:0;margin-right:2px;}
+
+  .kebab-menu{
+    position:absolute;top:54px;right:14px;background:var(--bg-elevated);
+    border:1px solid var(--border);border-radius:var(--radius-sm);min-width:210px;
+    box-shadow:0 12px 28px rgba(0,0,0,.45);overflow:hidden;z-index:30;
+  }
+  .kebab-menu button{
+    width:100%;text-align:left;padding:11px 15px;background:none;border:none;
+    color:var(--text-primary);font-size:.88rem;cursor:pointer;display:flex;align-items:center;gap:8px;
+  }
+  .kebab-menu button:hover{background:var(--bg-surface);}
+  .kebab-menu button.danger{color:var(--danger);}
+  .kebab-menu .kebab-sep{height:1px;background:var(--border);margin:4px 0;}
+  .hidden{display:none !important;}
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{
+    display:flex;align-items:center;gap:3px;padding:9px 12px;
+    border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0;
+    -ms-overflow-style:none;
+  }
+  .toolbar::-webkit-scrollbar{height:0;}
+  .tb-sep{width:1px;align-self:stretch;background:var(--border);margin:2px 6px;flex-shrink:0;}
+  .tb-btn{
+    min-width:34px;height:32px;padding:0 9px;border-radius:var(--radius-sm);
+    background:transparent;border:1px solid transparent;color:var(--text-secondary);
+    font-size:.84rem;font-weight:600;cursor:pointer;display:flex;align-items:center;
+    justify-content:center;gap:5px;white-space:nowrap;flex-shrink:0;
+    transition:background .12s,color .12s,border-color .12s;
+  }
+  .tb-btn:hover{background:var(--bg-elevated);color:var(--text-primary);}
+  .tb-btn.active{background:var(--accent-soft);color:var(--accent);border-color:rgba(218,119,86,.4);}
+  .tb-btn.tb-i{font-style:italic;}
+  .tb-btn.tb-u{text-decoration:underline;}
+  .tb-btn.tb-s{text-decoration:line-through;}
+  .tb-btn.tb-text{font-family:var(--sans);font-weight:600;letter-spacing:.01em;font-size:.8rem;}
+  .tb-btn:disabled{opacity:.35;cursor:default;}
+  .tb-btn:disabled:hover{background:transparent;color:var(--text-secondary);}
+
+  /* ---------- Editor ---------- */
+  .editor-wrap{flex:1;overflow-y:auto;display:flex;justify-content:center;}
+  #editor{
+    width:100%;max-width:740px;padding:32px 22px 220px;outline:none;
+    line-height:1.7;font-size:1.04rem;min-height:100%;caret-color:var(--accent);
+  }
+  #editor:empty:before{content:attr(data-placeholder);color:var(--text-muted);}
+  #editor h1{font-family:var(--serif);font-size:1.85rem;font-weight:700;margin:1.3em 0 .5em;color:var(--text-primary);}
+  #editor h1:first-child{margin-top:0;}
+  #editor h2{font-family:var(--serif);font-size:1.42rem;font-weight:700;margin:1.2em 0 .5em;color:var(--text-primary);}
+  #editor h3{font-family:var(--serif);font-size:1.15rem;font-weight:700;margin:1.1em 0 .4em;color:var(--accent);}
+  #editor p{margin:.65em 0;}
+  #editor ul,#editor ol{margin:.6em 0;padding-left:1.4em;}
+  #editor li{margin:.25em 0;}
+  #editor blockquote{
+    border-left:3px solid var(--accent);margin:1em 0;padding:.5em 1em;
+    color:var(--text-secondary);font-style:italic;background:var(--bg-surface);
+    border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+  }
+  #editor hr{border:none;border-top:1px dashed var(--border);margin:2.2em 0;}
+  #editor a{color:var(--accent);}
+  .block-scene{
+    font-family:var(--mono);font-size:.76rem;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--accent);border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+    padding:.55em 0;margin:1.8em 0 .9em;
+  }
+  .block-character{
+    font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+    margin:1em 0 .1em;font-size:.92rem;color:var(--text-primary);
+  }
+  .block-dialogue{margin:0 0 .9em 1.4em;color:var(--text-primary);}
+  .block-direction{font-style:italic;color:var(--text-muted);font-size:.92rem;}
+  .block-transition{
+    font-family:var(--mono);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--text-secondary);text-align:right;margin:1.4em 0;
+  }
+
+  /* ---------- Empty state ---------- */
+  .empty-state{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:40px;color:var(--text-secondary);
+  }
+  .empty-icon{
+    width:52px;height:52px;border-radius:14px;background:var(--accent-soft);color:var(--accent);
+    display:flex;align-items:center;justify-content:center;font-family:var(--serif);
+    font-size:1.6rem;margin-bottom:18px;
+  }
+  .empty-state h2{font-family:var(--serif);font-size:1.3rem;margin:0 0 8px;color:var(--text-primary);}
+  .empty-state p{margin:0 0 18px;font-size:.92rem;max-width:320px;}
+  .empty-state button{
+    padding:10px 18px;background:var(--accent);color:#fff;border:none;
+    border-radius:var(--radius-sm);font-weight:600;cursor:pointer;font-size:.9rem;
+  }
+  .empty-state button:hover{background:var(--accent-hover);}
+
+  /* ---------- Modal ---------- */
+  .modal{
+    position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;
+    align-items:center;justify-content:center;z-index:100;padding:20px;
+  }
+  .modal-box{
+    background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);
+    padding:22px;width:100%;max-width:340px;
+  }
+  .modal-box h3{margin:0 0 8px;font-family:var(--serif);font-size:1.1rem;}
+  .modal-box p{margin:0 0 18px;font-size:.88rem;color:var(--text-secondary);}
+  .modal-box .modal-note-title{color:var(--text-primary);font-weight:600;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;}
+  .btn-ghost{
+    background:transparent;border:1px solid var(--border);color:var(--text-primary);
+    border-radius:var(--radius-sm);padding:9px 15px;cursor:pointer;font-size:.88rem;
+  }
+  .btn-ghost:hover{background:var(--bg-surface);}
+  .btn-danger{
+    background:var(--danger);border:none;color:#fff;border-radius:var(--radius-sm);
+    padding:9px 15px;cursor:pointer;font-weight:600;font-size:.88rem;
+  }
+  .btn-danger:hover{background:var(--danger-hover);}
+  .export-options{display:flex;flex-direction:column;gap:8px;margin-bottom:18px;}
+  .export-option{
+    display:flex;align-items:center;gap:10px;padding:11px 13px;
+    background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-sm);
+    cursor:pointer;text-align:left;color:var(--text-primary);font-size:.88rem;
+  }
+  .export-option:hover{border-color:var(--accent);}
+  .export-option strong{display:block;font-size:.88rem;}
+  .export-option span{display:block;font-size:.74rem;color:var(--text-muted);margin-top:1px;}
+
+  .toast{
+    position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-primary);
+    padding:10px 18px;border-radius:var(--radius-sm);font-size:.85rem;
+    box-shadow:0 10px 28px rgba(0,0,0,.4);z-index:200;opacity:0;
+    transition:opacity .2s ease,transform .2s ease;pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ---------- Mobile ---------- */
+  @media (max-width:768px){
+    .only-mobile{display:flex;}
+    #sidebar{
+      position:fixed;top:0;left:0;bottom:0;width:280px;
+      transform:translateX(-100%);z-index:50;box-shadow:4px 0 30px rgba(0,0,0,.45);
+    }
+    #app.sidebar-open #sidebar{transform:translateX(0);}
+    #app.sidebar-open #backdrop{
+      display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40;
+    }
+    #editor{padding:22px 16px 220px;}
+    .title-input{font-size:1.08rem;}
+    .word-count{display:none;}
+  }
+
+  /* ---------- Light theme ---------- */
+  body.theme-light{
+    --bg-app:#faf9f6;
+    --bg-sidebar:#f1efe9;
+    --bg-surface:#ffffff;
+    --bg-elevated:#ece9e2;
+    --border:#ddd8cd;
+    --text-primary:#2c2a26;
+    --text-secondary:#5c584f;
+    --text-muted:#8a857a;
+    --accent:#c2603f;
+    --accent-hover:#a94f33;
+    --accent-soft:rgba(194,96,63,0.12);
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="backdrop"></div>
+
+  <aside id="sidebar">
+    <div class="sidebar-head">
+      <div class="brand">
+        <span class="brand-mark">M</span>
+        <span class="brand-name">MasterScripts</span>
+      </div>
+      <button id="closeSidebarBtn" class="icon-btn only-mobile" title="Fechar menu" aria-label="Fechar menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <button id="newNoteBtn" class="new-btn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+      Novo roteiro
+    </button>
+
+    <div class="search-wrap">
+      <input id="searchInput" type="text" placeholder="Buscar roteiros..." autocomplete="off" aria-label="Buscar roteiros">
+    </div>
+
+    <div id="storageWarning" class="storage-warning hidden" role="alert"></div>
+
+    <div class="sidebar-section-label">
+      <span>Seus roteiros</span>
+      <button id="importBtn" class="icon-btn" style="width:24px;height:24px;" title="Importar arquivo" aria-label="Importar arquivo">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+      </button>
+    </div>
+    <input id="importInput" type="file" accept=".txt,.md,.markdown,.html,.htm" class="hidden" multiple>
+    <div id="swipeHint" class="swipe-hint">Deslize um roteiro para a esquerda para excluir</div>
+    <div id="notesList" class="notes-list"></div>
+  </aside>
+
+  <main id="main">
+    <header id="topbar">
+      <button id="menuBtn" class="icon-btn" title="Abrir/fechar menu" aria-label="Abrir ou fechar menu lateral">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <input id="titleInput" class="title-input" placeholder="Sem título" autocomplete="off" aria-label="Título do roteiro">
+      <span id="wordCount" class="word-count"></span>
+      <span id="saveStatus" class="save-status">Salvo</span>
+      <button id="kebabBtn" class="icon-btn" title="Mais opções" aria-label="Mais opções" aria-haspopup="true" aria-expanded="false">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+      </button>
+      <div id="kebabMenu" class="kebab-menu hidden" role="menu">
+        <button data-action="pin"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 00-1.11-1.79l-1.78-.9A2 2 0 0115 10.76V6h1a2 2 0 000-4H8a2 2 0 000 4h1v4.76a2 2 0 01-1.11 1.79l-1.78.9A2 2 0 005 15.24V17z"/></svg> <span id="pinLabel">Fixar roteiro</span></button>
+        <button data-action="export"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar roteiro</button>
+        <button data-action="duplicate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Duplicar roteiro</button>
+        <button data-action="theme"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg> Alternar tema claro/escuro</button>
+        <div class="kebab-sep"></div>
+        <button data-action="delete" class="danger"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg> Excluir roteiro</button>
+      </div>
+    </header>
+
+    <div id="toolbar" class="toolbar">
+      <button class="tb-btn tb-text" data-block="H1" title="Título grande">T1</button>
+      <button class="tb-btn tb-text" data-block="H2" title="Título médio">T2</button>
+      <button class="tb-btn tb-text" data-block="H3" title="Título pequeno">T3</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" data-cmd="bold" title="Negrito">B</button>
+      <button class="tb-btn tb-i" data-cmd="italic" title="Itálico">I</button>
+      <button class="tb-btn tb-u" data-cmd="underline" title="Sublinhado">S</button>
+      <button class="tb-btn tb-s" data-cmd="strikeThrough" title="Riscado">A</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" data-cmd="insertUnorderedList" title="Lista com marcadores">• Lista</button>
+      <button class="tb-btn" data-cmd="insertOrderedList" title="Lista numerada">1. Lista</button>
+      <button class="tb-btn tb-text" data-block="BLOCKQUOTE" title="Citação / referência"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg> Citação</button>
+      <button class="tb-btn tb-text" data-special="divider" title="Linha divisória">— Divisor</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn tb-text" data-special="highlight" title="Destacar texto selecionado"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.24 12.24a6 6 0 00-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg> Destacar</button>
+      <button class="tb-btn tb-text" data-cmd="removeFormat" title="Limpar formatação"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16l10-10 7 7-2.5 2.5"/><path d="M6 15l3 3"/></svg> Limpar</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn tb-text" data-special="scene" title="Inserir marcador de cena"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="2" y1="17" x2="7" y2="17"/></svg> Cena</button>
+      <button class="tb-btn tb-text" data-special="dialogue" title="Inserir personagem + fala"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> Fala</button>
+      <button class="tb-btn tb-text" data-special="direction" title="Inserir direção de cena"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21c0 0-4-5-4-9s4-9 4-9"/><path d="M7 3c0 0 4 5 4 9s-4 9-4 9"/></svg> Direção</button>
+      <button class="tb-btn tb-text" data-special="transition" title="Inserir transição (CORTA PARA:)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg> Transição</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" data-cmd="undo" title="Desfazer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/></svg></button>
+      <button class="tb-btn" data-cmd="redo" title="Refazer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 019-9 9 9 0 016 2.3L21 13"/></svg></button>
+    </div>
+
+    <div class="editor-wrap">
+      <div id="editor" contenteditable="true" data-placeholder="Comece a escrever seu roteiro..."></div>
+    </div>
+
+    <div id="emptyState" class="empty-state hidden">
+      <div class="empty-icon">M</div>
+      <h2>Nenhum roteiro selecionado</h2>
+      <p>Crie um novo roteiro para começar a escrever suas anotações, ideias e roteiros de vídeo.</p>
+      <button id="emptyNewBtn">+ Novo roteiro</button>
+    </div>
+  </main>
+</div>
+
+<div id="confirmModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+  <div class="modal-box">
+    <h3 id="confirmTitle">Excluir roteiro?</h3>
+    <p>Tem certeza que deseja excluir <span class="modal-note-title" id="confirmNoteTitle"></span>? Essa ação não pode ser desfeita e o conteúdo será apagado permanentemente deste navegador.</p>
+    <div class="modal-actions">
+      <button id="confirmCancel" class="btn-ghost">Cancelar</button>
+      <button id="confirmDelete" class="btn-danger">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<div id="exportModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="exportTitle">
+  <div class="modal-box">
+    <h3 id="exportTitle">Exportar roteiro</h3>
+    <p>Escolha o formato de exportação.</p>
+    <div class="export-options">
+      <button class="export-option" data-format="txt">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span><strong>Texto simples (.txt)</strong><span>Sem formatação, leve e universal</span></span>
+      </button>
+      <button class="export-option" data-format="md">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M8 8v8"/><path d="M8 12h2l2-4 2 8 2-4h2"/></svg>
+        <span><strong>Markdown (.md)</strong><span>Preserva títulos, listas e ênfase</span></span>
+      </button>
+      <button class="export-option" data-format="html">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+        <span><strong>HTML / Word (.html)</strong><span>Abre no Word, Google Docs ou navegador com toda a formatação</span></span>
+      </button>
+      <button class="export-option" data-format="pdf">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <span><strong>PDF</strong><span>Abre a janela de impressão do navegador para salvar como PDF</span></span>
+      </button>
+    </div>
+    <div class="modal-actions">
+      <button id="exportCancel" class="btn-ghost">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+  var STORAGE_KEY = "masterscripts:notes:v1";
+  var THEME_KEY = "masterscripts:theme:v1";
+  var HILITE_COLOR = "rgba(240,196,90,0.4)";
+
+  var els = {
+    app: document.getElementById("app"),
+    sidebar: document.getElementById("sidebar"),
+    backdrop: document.getElementById("backdrop"),
+    menuBtn: document.getElementById("menuBtn"),
+    closeSidebarBtn: document.getElementById("closeSidebarBtn"),
+    newNoteBtn: document.getElementById("newNoteBtn"),
+    emptyNewBtn: document.getElementById("emptyNewBtn"),
+    searchInput: document.getElementById("searchInput"),
+    notesList: document.getElementById("notesList"),
+    titleInput: document.getElementById("titleInput"),
+    saveStatus: document.getElementById("saveStatus"),
+    wordCount: document.getElementById("wordCount"),
+    kebabBtn: document.getElementById("kebabBtn"),
+    kebabMenu: document.getElementById("kebabMenu"),
+    pinLabel: document.getElementById("pinLabel"),
+    toolbar: document.getElementById("toolbar"),
+    editor: document.getElementById("editor"),
+    emptyState: document.getElementById("emptyState"),
+    confirmModal: document.getElementById("confirmModal"),
+    confirmCancel: document.getElementById("confirmCancel"),
+    confirmDelete: document.getElementById("confirmDelete"),
+    confirmNoteTitle: document.getElementById("confirmNoteTitle"),
+    exportModal: document.getElementById("exportModal"),
+    exportCancel: document.getElementById("exportCancel"),
+    storageWarning: document.getElementById("storageWarning"),
+    importBtn: document.getElementById("importBtn"),
+    importInput: document.getElementById("importInput"),
+    swipeHint: document.getElementById("swipeHint"),
+    toast: document.getElementById("toast")
+  };
+
+  var state = {
+    notes: [],
+    activeId: null,
+    pendingDeleteId: null,
+    saveTimer: null,
+    toastTimer: null,
+    isTouch: window.matchMedia("(hover:none), (pointer:coarse)").matches,
+    nextSceneNum: 1
+  };
+
+  // ============================================================
+  // Storage
+  // ============================================================
+  function loadNotes(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      var parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    }catch(e){ return []; }
+  }
+  function persist(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.notes));
+      hideStorageWarning();
+      return true;
+    }catch(e){
+      showStorageWarning();
+      return false;
+    }
+  }
+  function showStorageWarning(){
+    els.storageWarning.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Não foi possível salvar: o armazenamento do navegador está cheio ou indisponível. Exporte seus roteiros para não perder o conteúdo.';
+    els.storageWarning.classList.remove("hidden");
+  }
+  function hideStorageWarning(){
+    els.storageWarning.classList.add("hidden");
+  }
+  function genId(){
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+  function seedNote(){
+    return {
+      id: genId(),
+      title: "Bem-vindo ao MasterScripts",
+      html:
+        '<h1>Como usar o MasterScripts</h1>' +
+        '<p>Este é o seu espaço para guardar <b>roteiros</b>, anotações e ideias para vídeo — sem precisar saber markdown. Use a barra de ferramentas acima para formatar.</p>' +
+        '<h2>Formatação rápida</h2>' +
+        '<ul><li>Selecione um texto e toque em <b>B</b>, <i>I</i> ou <u>S</u> para negrito, itálico ou sublinhado.</li>' +
+        '<li>Use T1 / T2 / T3 para títulos de diferentes tamanhos.</li>' +
+        '<li>Use — Divisor para separar partes do roteiro.</li></ul>' +
+        '<blockquote>Isto é uma citação ou referência — ótimo para guardar uma frase, fonte ou ideia para usar depois.</blockquote>' +
+        '<hr>' +
+        '<div class="block-scene">Cena 01&nbsp;&nbsp;•&nbsp;&nbsp;INT./EXT. — LOCAL — DIA/NOITE</div>' +
+        '<p class="block-character">NARRADOR</p>' +
+        '<p class="block-dialogue">Use os botões Cena, Fala, Direção e Transição para estruturar seu roteiro automaticamente.</p>' +
+        '<p class="block-direction">(sorri para a câmera e aponta para a barra de ferramentas)</p>' +
+        '<p class="block-transition">CORTA PARA:</p>' +
+        '<p>No celular, deslize um roteiro na lista para a esquerda para excluí-lo. No computador, passe o mouse sobre o roteiro para ver os ícones de fixar e excluir. Tudo é salvo automaticamente neste navegador.</p>',
+      updatedAt: Date.now(),
+      pinned: false
+    };
+  }
+
+  // ============================================================
+  // Helpers
+  // ============================================================
+  function getActive(){
+    for (var i = 0; i < state.notes.length; i++){
+      if (state.notes[i].id === state.activeId) return state.notes[i];
+    }
+    return null;
+  }
+  function isMobile(){
+    return window.matchMedia("(max-width:768px)").matches;
+  }
+  function stripHtml(html){
+    var tmp = document.createElement("div");
+    tmp.innerHTML = html || "";
+    return (tmp.textContent || tmp.innerText || "").replace(/\s+/g, " ").trim();
+  }
+  function formatRelative(ts){
+    var diff = Math.max(0, Date.now() - ts);
+    var s = Math.floor(diff / 1000);
+    if (s < 8) return "agora mesmo";
+    if (s < 60) return "há " + s + "s";
+    var m = Math.floor(s / 60);
+    if (m < 60) return "há " + m + " min";
+    var h = Math.floor(m / 60);
+    if (h < 24) return "há " + h + "h";
+    var d = Math.floor(h / 24);
+    if (d < 7) return "há " + d + (d === 1 ? " dia" : " dias");
+    var date = new Date(ts);
+    return date.toLocaleDateString("pt-BR");
+  }
+  function sanitizeFilename(name){
+    return (name || "roteiro").trim().replace(/[\\/:*?"<>|]+/g, "-").slice(0, 80) || "roteiro";
+  }
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, function(c){
+      return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];
+    });
+  }
+  function countWords(text){
+    var t = (text || "").trim();
+    if (!t) return 0;
+    return t.split(/\s+/).length;
+  }
+  function showToast(msg){
+    els.toast.textContent = msg;
+    els.toast.classList.add("show");
+    clearTimeout(state.toastTimer);
+    state.toastTimer = setTimeout(function(){
+      els.toast.classList.remove("show");
+    }, 2600);
+  }
+
+  // ============================================================
+  // Sidebar render
+  // ============================================================
+  function renderSidebar(){
+    var query = (els.searchInput.value || "").toLowerCase().trim();
+    var sorted = state.notes.slice().sort(function(a, b){
+      var ap = a.pinned ? 1 : 0, bp = b.pinned ? 1 : 0;
+      if (ap !== bp) return bp - ap;
+      return b.updatedAt - a.updatedAt;
+    });
+    var filtered = sorted.filter(function(n){
+      if (!query) return true;
+      var hay = ((n.title || "") + " " + stripHtml(n.html)).toLowerCase();
+      return hay.indexOf(query) !== -1;
+    });
+
+    els.notesList.innerHTML = "";
+
+    var hasNotes = state.notes.length > 0;
+    els.swipeHint.classList.toggle("show", hasNotes && state.isTouch);
+
+    if (filtered.length === 0){
+      var hint = document.createElement("div");
+      hint.className = "empty-list-hint";
+      hint.textContent = state.notes.length === 0
+        ? "Nenhum roteiro ainda. Crie o primeiro!"
+        : "Nenhum roteiro encontrado.";
+      els.notesList.appendChild(hint);
+      return;
+    }
+
+    filtered.forEach(function(note){
+      els.notesList.appendChild(buildNoteItem(note));
+    });
+  }
+
+  function buildNoteItem(note){
+    var wrap = document.createElement("div");
+    wrap.className = "note-item-wrap";
+
+    // Swipe-reveal delete action sits underneath (mobile only)
+    var swipeBtn = document.createElement("button");
+    swipeBtn.className = "note-swipe-action";
+    swipeBtn.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg><span>Excluir</span>';
+    swipeBtn.setAttribute("aria-label", "Excluir roteiro " + (note.title || "sem título"));
+    swipeBtn.addEventListener("click", function(e){
+      e.stopPropagation();
+      openConfirm(note.id);
+      resetSwipe(item);
+    });
+    wrap.appendChild(swipeBtn);
+
+    var item = document.createElement("div");
+    item.className = "note-item" + (note.id === state.activeId ? " active" : "") + (note.pinned ? " pinned" : "");
+    item.setAttribute("data-id", note.id);
+
+    var titleRow = document.createElement("div");
+    titleRow.className = "note-title-row";
+
+    var pinIcon = document.createElement("span");
+    pinIcon.className = "note-pin-icon";
+    pinIcon.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-5 5v5l-2 2-2-2v-5l-5-5 5-5z" stroke="none"/></svg>';
+    titleRow.appendChild(pinIcon);
+
+    var titleEl = document.createElement("div");
+    titleEl.className = "note-title";
+    titleEl.textContent = note.title && note.title.trim() ? note.title.trim() : "Sem título";
+    titleRow.appendChild(titleEl);
+
+    var snippetEl = document.createElement("div");
+    snippetEl.className = "note-snippet";
+    var snippetText = stripHtml(note.html);
+    snippetEl.textContent = snippetText ? snippetText.slice(0, 90) : "Roteiro vazio";
+
+    var metaEl = document.createElement("div");
+    metaEl.className = "note-meta";
+    metaEl.textContent = formatRelative(note.updatedAt);
+
+    item.appendChild(titleRow);
+    item.appendChild(snippetEl);
+    item.appendChild(metaEl);
+
+    // Desktop-only hover icons (pin + delete)
+    var pinBtn = document.createElement("button");
+    pinBtn.className = "note-pin-btn";
+    pinBtn.title = note.pinned ? "Desafixar" : "Fixar";
+    pinBtn.setAttribute("aria-label", note.pinned ? "Desafixar roteiro" : "Fixar roteiro");
+    pinBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3l5 5-5 5v5l-2 2-2-2v-5l-5-5 5-5z"/></svg>';
+    pinBtn.addEventListener("click", function(e){
+      e.stopPropagation();
+      togglePin(note.id);
+    });
+    item.appendChild(pinBtn);
+
+    var delBtn = document.createElement("button");
+    delBtn.className = "note-delete";
+    delBtn.title = "Excluir roteiro";
+    delBtn.setAttribute("aria-label", "Excluir roteiro");
+    delBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg>';
+    delBtn.addEventListener("click", function(e){
+      e.stopPropagation();
+      openConfirm(note.id);
+    });
+    item.appendChild(delBtn);
+
+    item.addEventListener("click", function(){
+      if (item.classList.contains("swiped")) { resetSwipe(item); return; }
+      selectNote(note.id);
+    });
+
+    // When item is swiped (pointer-events:none), taps on the visible item area
+    // fall through to the wrap — use that to reset the swipe.
+    wrap.addEventListener("click", function(e){
+      if (item.classList.contains("swiped") && !e.target.closest(".note-swipe-action")){
+        resetSwipe(item);
+      }
+    });
+
+    if (state.isTouch) attachSwipeHandlers(item, swipeBtn);
+
+    wrap.appendChild(item);
+    return wrap;
+  }
+
+  // ---- swipe-to-delete (touch) ----
+  function attachSwipeHandlers(item, swipeBtn){
+    var startX = 0, startY = 0, currentX = 0, dragging = false, decided = false, isHorizontal = false;
+    var REVEAL = 84;
+
+    item.addEventListener("touchstart", function(e){
+      if (e.touches.length !== 1) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      currentX = item.classList.contains("swiped") ? -REVEAL : 0;
+      dragging = true; decided = false; isHorizontal = false;
+      item.classList.add("dragging");
+    }, {passive:true});
+
+    item.addEventListener("touchmove", function(e){
+      if (!dragging) return;
+      var dx = e.touches[0].clientX - startX;
+      var dy = e.touches[0].clientY - startY;
+      if (!decided){
+        if (Math.abs(dx) > 8 || Math.abs(dy) > 8){
+          decided = true;
+          isHorizontal = Math.abs(dx) > Math.abs(dy);
+        } else {
+          return;
+        }
+      }
+      if (!isHorizontal) return;
+      e.preventDefault();
+      var base = item.classList.contains("swiped") ? -REVEAL : 0;
+      var x = base + dx;
+      x = Math.max(-REVEAL - 16, Math.min(0, x));
+      item.style.transform = "translateX(" + x + "px)";
+    }, {passive:false});
+
+    function endSwipe(e){
+      if (!dragging) return;
+      dragging = false;
+      item.classList.remove("dragging");
+      if (!isHorizontal){ return; }
+      var dx = (e.changedTouches ? e.changedTouches[0].clientX : startX) - startX;
+      var base = item.classList.contains("swiped") ? -REVEAL : 0;
+      var finalX = base + dx;
+      if (finalX < -REVEAL * 0.45){
+        item.style.transform = "translateX(-" + REVEAL + "px)";
+        item.classList.add("swiped");
+        item.style.pointerEvents = "none";
+      } else {
+        item.style.transform = "translateX(0)";
+        item.classList.remove("swiped");
+        item.style.pointerEvents = "";
+      }
+    }
+    item.addEventListener("touchend", endSwipe);
+    item.addEventListener("touchcancel", function(){
+      dragging = false;
+      item.classList.remove("dragging");
+      item.style.transform = item.classList.contains("swiped") ? "translateX(-" + REVEAL + "px)" : "translateX(0)";
+    });
+  }
+  function resetSwipe(item){
+    if (!item) return;
+    item.classList.remove("swiped");
+    item.style.transform = "translateX(0)";
+    item.style.pointerEvents = "";
+  }
+  function resetAllSwipes(){
+    var items = els.notesList.querySelectorAll(".note-item.swiped");
+    items.forEach(resetSwipe);
+  }
+
+  // ============================================================
+  // Editor render
+  // ============================================================
+  function setEditorEnabled(enabled){
+    els.titleInput.disabled = !enabled;
+    els.editor.setAttribute("contenteditable", enabled ? "true" : "false");
+    var btns = els.toolbar.querySelectorAll(".tb-btn");
+    btns.forEach(function(b){ b.disabled = !enabled; });
+  }
+
+  function renderEditor(){
+    var note = getActive();
+    if (!note){
+      els.emptyState.classList.remove("hidden");
+      els.editor.style.display = "none";
+      els.titleInput.value = "";
+      els.saveStatus.textContent = "";
+      els.wordCount.textContent = "";
+      setEditorEnabled(false);
+      return;
+    }
+    els.emptyState.classList.add("hidden");
+    els.editor.style.display = "block";
+    setEditorEnabled(true);
+    els.titleInput.value = note.title || "";
+    if (els.editor.innerHTML !== (note.html || "")){
+      els.editor.innerHTML = note.html || "";
+    }
+    els.saveStatus.textContent = "Salvo • " + formatRelative(note.updatedAt);
+    updateWordCount();
+    els.pinLabel.textContent = note.pinned ? "Desafixar roteiro" : "Fixar roteiro";
+  }
+
+  function updateWordCount(){
+    var words = countWords(stripHtml(els.editor.innerHTML));
+    var pages = Math.max(1, Math.ceil(words / 230));
+    els.wordCount.textContent = words === 0 ? "" : (words + " palavras · ~" + pages + (pages === 1 ? " página" : " páginas"));
+  }
+
+  // ============================================================
+  // Actions
+  // ============================================================
+  function selectNote(id){
+    resetAllSwipes();
+    state.activeId = id;
+    renderSidebar();
+    renderEditor();
+    if (isMobile()) closeSidebarMobile();
+  }
+
+  function newNote(){
+    var n = { id: genId(), title: "", html: "", updatedAt: Date.now(), pinned: false };
+    state.notes.unshift(n);
+    state.activeId = n.id;
+    persist();
+    renderSidebar();
+    renderEditor();
+    if (isMobile()) closeSidebarMobile();
+    setTimeout(function(){ els.titleInput.focus(); }, 50);
+  }
+
+  function duplicateNote(){
+    var note = getActive();
+    if (!note) return;
+    var copy = {
+      id: genId(),
+      title: (note.title || "Sem título") + " (cópia)",
+      html: note.html || "",
+      updatedAt: Date.now(),
+      pinned: false
+    };
+    state.notes.unshift(copy);
+    state.activeId = copy.id;
+    persist();
+    renderSidebar();
+    renderEditor();
+    showToast("Roteiro duplicado");
+  }
+
+  function togglePin(id){
+    var note = null;
+    for (var i = 0; i < state.notes.length; i++){
+      if (state.notes[i].id === id){ note = state.notes[i]; break; }
+    }
+    if (!note) return;
+    note.pinned = !note.pinned;
+    persist();
+    renderSidebar();
+    if (id === state.activeId) els.pinLabel.textContent = note.pinned ? "Desafixar roteiro" : "Fixar roteiro";
+    showToast(note.pinned ? "Roteiro fixado" : "Roteiro desafixado");
+  }
+
+  function deleteNoteConfirmed(id){
+    var note = state.notes.filter(function(n){ return n.id === id; })[0];
+    state.notes = state.notes.filter(function(n){ return n.id !== id; });
+    persist();
+    if (state.activeId === id){
+      var remaining = state.notes.slice().sort(function(a,b){ return b.updatedAt - a.updatedAt; });
+      state.activeId = remaining.length ? remaining[0].id : null;
+    }
+    renderSidebar();
+    renderEditor();
+    closeConfirmModal();
+    showToast(note ? "Roteiro \"" + (note.title || "Sem título") + "\" excluído" : "Roteiro excluído");
+  }
+
+  // ============================================================
+  // Export
+  // ============================================================
+  function htmlToMarkdown(html){
+    var tmp = document.createElement("div");
+    tmp.innerHTML = html || "";
+    function walk(node){
+      var out = "";
+      node.childNodes.forEach(function(child){
+        if (child.nodeType === 3){ out += child.textContent; return; }
+        if (child.nodeType !== 1) return;
+        var tag = child.tagName.toLowerCase();
+        var inner = walk(child).trim();
+        switch(tag){
+          case "h1": out += "\n# " + inner + "\n\n"; break;
+          case "h2": out += "\n## " + inner + "\n\n"; break;
+          case "h3": out += "\n### " + inner + "\n\n"; break;
+          case "b": case "strong": out += "**" + inner + "**"; break;
+          case "i": case "em": out += "_" + inner + "_"; break;
+          case "u": out += inner; break;
+          case "blockquote": out += "\n> " + inner.replace(/\n/g, "\n> ") + "\n\n"; break;
+          case "hr": out += "\n---\n\n"; break;
+          case "ul":
+            child.querySelectorAll(":scope > li").forEach(function(li){ out += "- " + walk(li).trim() + "\n"; });
+            out += "\n"; break;
+          case "ol":
+            var idx = 1;
+            child.querySelectorAll(":scope > li").forEach(function(li){ out += (idx++) + ". " + walk(li).trim() + "\n"; });
+            out += "\n"; break;
+          case "li": out += inner; break;
+          case "p": out += inner + "\n\n"; break;
+          case "div":
+            if (child.classList.contains("block-scene")) out += "\n**[CENA]** " + inner + "\n\n";
+            else out += inner + "\n\n";
+            break;
+          case "br": out += "\n"; break;
+          default: out += inner;
+        }
+      });
+      return out;
+    }
+    return walk(tmp).replace(/\n{3,}/g, "\n\n").trim();
+  }
+
+  function buildExportHtml(note){
+    var title = escapeHtml(note.title || "Sem título");
+    return "<!DOCTYPE html><html lang=\"pt-BR\"><head><meta charset=\"UTF-8\">" +
+      "<title>" + title + "</title>" +
+      "<style>" +
+      "body{font-family:Georgia,'Times New Roman',serif;max-width:760px;margin:40px auto;padding:0 24px;line-height:1.6;color:#222;}" +
+      "h1{font-size:1.8rem;} h2{font-size:1.4rem;} h3{font-size:1.15rem;color:#b35c3f;}" +
+      "blockquote{border-left:3px solid #c2603f;margin:1em 0;padding:.4em 1em;color:#444;font-style:italic;}" +
+      ".block-scene{font-family:'Courier New',monospace;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:#b35c3f;border-top:1px solid #ddd;border-bottom:1px solid #ddd;padding:.5em 0;margin:1.8em 0 .8em;}" +
+      ".block-character{font-weight:700;text-transform:uppercase;margin:1em 0 .1em;}" +
+      ".block-dialogue{margin:0 0 .9em 1.4em;}" +
+      ".block-direction{font-style:italic;color:#666;}" +
+      ".block-transition{font-family:'Courier New',monospace;text-align:right;color:#555;}" +
+      "</style></head><body>" +
+      "<h1>" + title + "</h1>" + (note.html || "") +
+      "</body></html>";
+  }
+
+  function downloadBlob(content, mime, filename){
+    var blob = new Blob([content], { type: mime + ";charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function exportNote(note, format){
+    if (!note) return;
+    var base = sanitizeFilename(note.title);
+    if (format === "txt"){
+      var text = note.title ? note.title + "\n\n" + stripHtml(note.html) : stripHtml(note.html);
+      downloadBlob(text, "text/plain", base + ".txt");
+    } else if (format === "md"){
+      var md = "# " + (note.title || "Sem título") + "\n\n" + htmlToMarkdown(note.html);
+      downloadBlob(md, "text/markdown", base + ".md");
+    } else if (format === "html"){
+      downloadBlob(buildExportHtml(note), "text/html", base + ".html");
+    } else if (format === "pdf"){
+      var w = window.open("", "_blank");
+      if (!w){ showToast("Permita pop-ups para exportar em PDF"); return; }
+      w.document.open();
+      w.document.write(buildExportHtml(note));
+      w.document.close();
+      setTimeout(function(){
+        try{ w.focus(); w.print(); }catch(e){}
+      }, 350);
+    }
+    showToast("Exportando \"" + (note.title || "Sem título") + "\"…");
+  }
+
+  // ============================================================
+  // Import
+  // ============================================================
+  function importFiles(fileList){
+    var files = Array.prototype.slice.call(fileList || []);
+    if (!files.length) return;
+    var pending = files.length;
+    files.forEach(function(file){
+      var reader = new FileReader();
+      reader.onload = function(){
+        var raw = String(reader.result || "");
+        var name = file.name.replace(/\.[^.]+$/, "");
+        var isHtml = /\.html?$/i.test(file.name);
+        var n = {
+          id: genId(),
+          title: name,
+          html: isHtml ? raw : escapeHtml(raw).split(/\n{2,}/).map(function(p){
+            return "<p>" + p.replace(/\n/g, "<br>") + "</p>";
+          }).join(""),
+          updatedAt: Date.now(),
+          pinned: false
+        };
+        state.notes.unshift(n);
+        pending--;
+        if (pending === 0){
+          state.activeId = n.id;
+          persist();
+          renderSidebar();
+          renderEditor();
+          showToast(files.length === 1 ? "Roteiro importado" : files.length + " roteiros importados");
+        }
+      };
+      reader.onerror = function(){
+        pending--;
+        showToast("Falha ao importar " + file.name);
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  // ============================================================
+  // Save
+  // ============================================================
+  function saveNow(){
+    var note = getActive();
+    if (!note) return;
+    note.title = els.titleInput.value;
+    note.html = els.editor.innerHTML;
+    note.updatedAt = Date.now();
+    var ok = persist();
+    els.saveStatus.textContent = ok ? "Salvo • " + formatRelative(note.updatedAt) : "Não foi possível salvar";
+    updateWordCount();
+    renderSidebar();
+  }
+
+  function scheduleSave(){
+    els.saveStatus.textContent = "Salvando...";
+    clearTimeout(state.saveTimer);
+    state.saveTimer = setTimeout(saveNow, 550);
+  }
+
+  // ============================================================
+  // Sidebar open/close
+  // ============================================================
+  function toggleSidebar(){
+    if (isMobile()) els.app.classList.toggle("sidebar-open");
+    else els.app.classList.toggle("sidebar-collapsed");
+  }
+  function closeSidebarMobile(){
+    els.app.classList.remove("sidebar-open");
+  }
+
+  // ============================================================
+  // Modals
+  // ============================================================
+  function openConfirm(id){
+    state.pendingDeleteId = id;
+    var note = state.notes.filter(function(n){ return n.id === id; })[0];
+    els.confirmNoteTitle.textContent = note ? ("\"" + (note.title || "Sem título") + "\"") : "este roteiro";
+    els.confirmModal.classList.remove("hidden");
+    setTimeout(function(){ els.confirmDelete.focus(); }, 30);
+  }
+  function closeConfirmModal(){
+    state.pendingDeleteId = null;
+    els.confirmModal.classList.add("hidden");
+  }
+  function openExportModal(){
+    if (!getActive()) return;
+    els.exportModal.classList.remove("hidden");
+  }
+  function closeExportModal(){
+    els.exportModal.classList.add("hidden");
+  }
+  function trapFocus(modalEl, e){
+    if (modalEl.classList.contains("hidden")) return;
+    if (e.key !== "Tab") return;
+    var focusable = modalEl.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (!focusable.length) return;
+    var first = focusable[0], last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first){
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && document.activeElement === last){
+      e.preventDefault(); first.focus();
+    }
+  }
+
+  // ============================================================
+  // Theme
+  // ============================================================
+  function applyTheme(theme){
+    document.body.classList.toggle("theme-light", theme === "light");
+  }
+  function toggleTheme(){
+    var current = document.body.classList.contains("theme-light") ? "light" : "dark";
+    var next = current === "light" ? "dark" : "light";
+    applyTheme(next);
+    try{ localStorage.setItem(THEME_KEY, next); }catch(e){}
+  }
+
+  // ============================================================
+  // Editor focus / caret helpers
+  // ============================================================
+  function placeCaretAtEnd(el){
+    el.focus();
+    var range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+  function ensureEditorFocus(){
+    if (document.activeElement !== els.editor){
+      placeCaretAtEnd(els.editor);
+    }
+  }
+
+  // ============================================================
+  // Formatting commands
+  // ============================================================
+  function runCmd(cmd){
+    ensureEditorFocus();
+    document.execCommand(cmd, false, null);
+    scheduleSave();
+    updateToolbarState();
+  }
+  function runFormatBlock(tag){
+    ensureEditorFocus();
+    try{ document.execCommand("formatBlock", false, "<" + tag + ">"); }
+    catch(e){ document.execCommand("formatBlock", false, tag); }
+    scheduleSave();
+  }
+  function insertHtmlAtCaret(html){
+    ensureEditorFocus();
+    document.execCommand("insertHTML", false, html);
+    scheduleSave();
+  }
+  function applyHighlight(){
+    ensureEditorFocus();
+    try{
+      document.execCommand("styleWithCSS", true);
+      if (document.queryCommandSupported && document.queryCommandSupported("hiliteColor")){
+        document.execCommand("hiliteColor", false, HILITE_COLOR);
+      } else {
+        document.execCommand("backColor", false, HILITE_COLOR);
+      }
+    }catch(e){
+      try{ document.execCommand("backColor", false, HILITE_COLOR); }catch(e2){}
+    }
+    scheduleSave();
+  }
+  function insertDivider(){
+    ensureEditorFocus();
+    try{ document.execCommand("insertHorizontalRule", false, null); }
+    catch(e){ insertHtmlAtCaret("<hr>"); }
+    scheduleSave();
+  }
+  function nextSceneNumber(){
+    var existing = els.editor.querySelectorAll(".block-scene");
+    var max = 0;
+    existing.forEach(function(el){
+      var m = (el.textContent || "").match(/Cena\s+(\d+)/i);
+      if (m) max = Math.max(max, parseInt(m[1], 10));
+    });
+    return max + 1;
+  }
+  function insertScene(){
+    var num = nextSceneNumber();
+    var numStr = (num < 10 ? "0" : "") + num;
+    var html = '<div class="block-scene">Cena ' + numStr + '&nbsp;&nbsp;•&nbsp;&nbsp;INT./EXT. — LOCAL — DIA/NOITE</div><p><br></p>';
+    insertHtmlAtCaret(html);
+  }
+  function insertDialogue(){
+    var html = '<p class="block-character">PERSONAGEM</p><p class="block-dialogue">Digite a fala aqui…</p>';
+    insertHtmlAtCaret(html);
+  }
+  function insertDirection(){
+    var html = '<span class="block-direction">(direção de cena)</span>&nbsp;';
+    insertHtmlAtCaret(html);
+  }
+  function insertTransition(){
+    var html = '<p class="block-transition">CORTA PARA:</p>';
+    insertHtmlAtCaret(html);
+  }
+
+  function updateToolbarState(){
+    ["bold", "italic", "underline", "strikeThrough"].forEach(function(cmd){
+      var btn = els.toolbar.querySelector('[data-cmd="' + cmd + '"]');
+      if (!btn) return;
+      var active = false;
+      try{ active = document.queryCommandState(cmd); }catch(e){}
+      btn.classList.toggle("active", active);
+    });
+  }
+
+  // ============================================================
+  // Events
+  // ============================================================
+  els.menuBtn.addEventListener("click", toggleSidebar);
+  els.closeSidebarBtn.addEventListener("click", closeSidebarMobile);
+  els.backdrop.addEventListener("click", closeSidebarMobile);
+  els.newNoteBtn.addEventListener("click", newNote);
+  els.emptyNewBtn.addEventListener("click", newNote);
+  els.searchInput.addEventListener("input", renderSidebar);
+
+  els.titleInput.addEventListener("input", scheduleSave);
+  els.titleInput.addEventListener("keydown", function(e){
+    if (e.key === "Enter"){ e.preventDefault(); els.editor.focus(); }
+  });
+
+  els.editor.addEventListener("input", function(){ scheduleSave(); updateWordCount(); });
+  els.editor.addEventListener("keyup", updateToolbarState);
+  els.editor.addEventListener("mouseup", updateToolbarState);
+  document.addEventListener("selectionchange", function(){
+    if (document.activeElement === els.editor) updateToolbarState();
+  });
+
+  els.toolbar.addEventListener("mousedown", function(e){
+    if (e.target.closest(".tb-btn")) e.preventDefault();
+  });
+  els.toolbar.addEventListener("click", function(e){
+    var btn = e.target.closest(".tb-btn");
+    if (!btn || btn.disabled) return;
+    var cmd = btn.getAttribute("data-cmd");
+    var block = btn.getAttribute("data-block");
+    var special = btn.getAttribute("data-special");
+    if (cmd) runCmd(cmd);
+    else if (block) runFormatBlock(block);
+    else if (special === "highlight") applyHighlight();
+    else if (special === "divider") insertDivider();
+    else if (special === "scene") insertScene();
+    else if (special === "dialogue") insertDialogue();
+    else if (special === "direction") insertDirection();
+    else if (special === "transition") insertTransition();
+  });
+
+  els.kebabBtn.addEventListener("click", function(e){
+    e.stopPropagation();
+    var willOpen = els.kebabMenu.classList.contains("hidden");
+    els.kebabMenu.classList.toggle("hidden");
+    els.kebabBtn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+  });
+  document.addEventListener("click", function(e){
+    if (!els.kebabMenu.classList.contains("hidden") &&
+        !els.kebabMenu.contains(e.target) && e.target !== els.kebabBtn){
+      els.kebabMenu.classList.add("hidden");
+      els.kebabBtn.setAttribute("aria-expanded", "false");
+    }
+    // tap outside a swiped item resets it
+    if (!e.target.closest(".note-item-wrap")) resetAllSwipes();
+  });
+  els.kebabMenu.addEventListener("click", function(e){
+    var actionBtn = e.target.closest("button[data-action]");
+    if (!actionBtn) return;
+    var action = actionBtn.getAttribute("data-action");
+    els.kebabMenu.classList.add("hidden");
+    els.kebabBtn.setAttribute("aria-expanded", "false");
+    if (action === "export") openExportModal();
+    else if (action === "duplicate") duplicateNote();
+    else if (action === "pin" && state.activeId) togglePin(state.activeId);
+    else if (action === "theme") toggleTheme();
+    else if (action === "delete" && state.activeId) openConfirm(state.activeId);
+  });
+
+  els.confirmCancel.addEventListener("click", closeConfirmModal);
+  els.confirmModal.addEventListener("click", function(e){
+    if (e.target === els.confirmModal) closeConfirmModal();
+  });
+  els.confirmDelete.addEventListener("click", function(){
+    if (state.pendingDeleteId) deleteNoteConfirmed(state.pendingDeleteId);
+  });
+
+  els.exportCancel.addEventListener("click", closeExportModal);
+  els.exportModal.addEventListener("click", function(e){
+    if (e.target === els.exportModal) closeExportModal();
+    var opt = e.target.closest(".export-option");
+    if (opt){
+      exportNote(getActive(), opt.getAttribute("data-format"));
+      closeExportModal();
+    }
+  });
+
+  els.importBtn.addEventListener("click", function(){ els.importInput.click(); });
+  els.importInput.addEventListener("change", function(){
+    importFiles(els.importInput.files);
+    els.importInput.value = "";
+  });
+
+  document.addEventListener("keydown", function(e){
+    var meta = e.ctrlKey || e.metaKey;
+    if (meta && e.key.toLowerCase() === "s"){ e.preventDefault(); saveNow(); }
+    if (e.key === "Escape"){
+      if (!els.confirmModal.classList.contains("hidden")) closeConfirmModal();
+      else if (!els.exportModal.classList.contains("hidden")) closeExportModal();
+      else if (!els.kebabMenu.classList.contains("hidden")){
+        els.kebabMenu.classList.add("hidden");
+        els.kebabBtn.setAttribute("aria-expanded", "false");
+      } else {
+        resetAllSwipes();
+      }
+    }
+    trapFocus(els.confirmModal, e);
+    trapFocus(els.exportModal, e);
+  });
+
+  window.addEventListener("beforeunload", function(){
+    clearTimeout(state.saveTimer);
+    saveNow();
+  });
+
+  // Cross-tab sync: another tab changed the notes
+  window.addEventListener("storage", function(e){
+    if (e.key !== STORAGE_KEY) return;
+    var freshNotes = loadNotes();
+    var activeStillExists = freshNotes.some(function(n){ return n.id === state.activeId; });
+    state.notes = freshNotes;
+    if (!activeStillExists){
+      var sorted = state.notes.slice().sort(function(a,b){ return b.updatedAt - a.updatedAt; });
+      state.activeId = sorted.length ? sorted[0].id : null;
+    }
+    renderSidebar();
+    renderEditor();
+  });
+
+  setInterval(function(){
+    var note = getActive();
+    if (note) els.saveStatus.textContent = "Salvo • " + formatRelative(note.updatedAt);
+  }, 20000);
+
+  window.addEventListener("resize", function(){
+    state.isTouch = window.matchMedia("(hover:none), (pointer:coarse)").matches;
+  });
+
+  // ============================================================
+  // Init
+  // ============================================================
+  function init(){
+    var savedTheme = "dark";
+    try{ savedTheme = localStorage.getItem(THEME_KEY) || "dark"; }catch(e){}
+    applyTheme(savedTheme);
+
+    state.notes = loadNotes();
+    if (state.notes.length === 0){
+      state.notes = [seedNote()];
+      persist();
+    }
+    // backfill pinned field for legacy notes
+    state.notes.forEach(function(n){ if (typeof n.pinned === "undefined") n.pinned = false; });
+
+    var sorted = state.notes.slice().sort(function(a, b){
+      var ap = a.pinned ? 1 : 0, bp = b.pinned ? 1 : 0;
+      if (ap !== bp) return bp - ap;
+      return b.updatedAt - a.updatedAt;
+    });
+    state.activeId = sorted[0].id;
+    renderSidebar();
+    renderEditor();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
