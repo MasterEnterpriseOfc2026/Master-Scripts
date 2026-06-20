@@ -1,1 +1,1 @@
-sua aplicação de anotações especialmente para roteiros, muitas ferramentas interface simples
+sua aplicação de anotações criada especialmente para roteiros, muitas ferramentas interface simples, fácil edição
